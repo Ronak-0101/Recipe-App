@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/Utils/Constant.dart';
 import 'package:flutter_recipe_app/Views/favorite_screen.dart';
+import 'package:flutter_recipe_app/Views/meal_plan_screen.dart';
 import 'package:flutter_recipe_app/Views/my_app_home_screen.dart';
+import 'package:flutter_recipe_app/Views/settings_screen.dart';
 import 'package:iconsax/iconsax.dart';
 
 class AppMainScreen extends StatefulWidget {
@@ -19,8 +21,8 @@ class _AppMainScreenState extends State<AppMainScreen> {
     page = [
       const MyAppHomeScreen(),
       const FavoriteScreen(),
-      navBarPage(Iconsax.calendar5),
-      navBarPage(Iconsax.setting_21),
+      const MealPlanScreen(),
+      const SettingsScreen(),
     ];
 
     super.initState();

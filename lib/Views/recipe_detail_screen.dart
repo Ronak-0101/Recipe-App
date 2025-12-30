@@ -213,7 +213,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                             ),
                           ),
                           SizedBox(height: 10),
-                          const Text(
+                          Text(
                             "How many Servings?",
                             style: TextStyle(
                               fontSize: 14,
