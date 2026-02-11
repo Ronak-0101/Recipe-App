@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_recipe_app/Utils/Constant.dart';
+import 'package:flutter_recipe_app/Views/search_screen.dart';
 import 'package:flutter_recipe_app/Views/view_all_items.dart';
 import 'package:flutter_recipe_app/Widget/banner.dart';
 import 'package:flutter_recipe_app/Widget/food_items_display.dart';
 import 'package:flutter_recipe_app/Widget/my_icon_button.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:flutter_recipe_app/Views/search_screen.dart';
 
 class MyAppHomeScreen extends StatefulWidget {
   const MyAppHomeScreen({super.key});
@@ -16,16 +20,56 @@ class MyAppHomeScreen extends StatefulWidget {
 
 class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
   String category = "All";
+  String searchQuery = ""; // Add search query state
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce; // For debouncing search
+
   // For categories
   final CollectionReference categoriesItems =
       FirebaseFirestore.instance.collection("App_category");
-  // For all items display
-  Query get filteredRecipe => FirebaseFirestore.instance
-      .collection("flutter_recipe_app")
-      .where('category', isEqualTo: category);
+
+  // For all items display - UPDATED to include search
+  Query get filteredRecipe {
+    Query query = FirebaseFirestore.instance.collection("flutter_recipe_app");
+
+    // Apply category filter
+    if (category != "All") {
+      query = query.where('category', isEqualTo: category);
+    }
+
+    // Apply search filter if query exists
+    if (searchQuery.isNotEmpty) {
+      // We'll use array-contains for tags search
+      // For name search, we'll do client-side filtering or use Firestore limitations
+      return query;
+    }
+
+    return query;
+  }
+
   Query get allRecipes =>
       FirebaseFirestore.instance.collection("flutter_recipe_app");
+
   Query get selectedRecipe => category == "All" ? allRecipes : filteredRecipe;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    // Debounce search to avoid too many Firestore queries
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        searchQuery = value.toLowerCase().trim();
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,12 +137,33 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
                   ],
                 ),
               ),
+              // Replace the StreamBuilder section with this:
               StreamBuilder(
                 stream: selectedRecipe.snapshots(),
                 builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasData) {
-                    final List<QueryDocumentSnapshot> recipes =
+                    List<QueryDocumentSnapshot> recipes =
                         snapshot.data?.docs ?? [];
+
+                    // Client-side search filtering
+                    if (searchQuery.isNotEmpty) {
+                      recipes = recipes.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final name =
+                            data['name']?.toString().toLowerCase() ?? '';
+                        final description =
+                            data['description']?.toString().toLowerCase() ?? '';
+                        final ingredients =
+                            List<String>.from(data['ingredients'] ?? [])
+                                .map((ing) => ing.toLowerCase())
+                                .toList();
+
+                        return name.contains(searchQuery) ||
+                            description.contains(searchQuery) ||
+                            ingredients.any((ing) => ing.contains(searchQuery));
+                      }).toList();
+                    }
+
                     return Padding(
                       padding: const EdgeInsets.only(left: 15, top: 5),
                       child: SingleChildScrollView(
@@ -111,7 +176,6 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
                       ),
                     );
                   }
-                  // it means if snapshot has data then it will show data otherwose show the progress bar.
                   return const Center(
                     child: CircularProgressIndicator(),
                   );
@@ -174,27 +238,50 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
     );
   }
 
-  Padding mySearchBar() {
+  Widget mySearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 22),
       child: TextField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        onTap: () {
+          // Navigate to dedicated search screen when clicked
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SearchScreen(initialQuery: searchQuery),
+            ),
+          );
+        },
         decoration: InputDecoration(
-            prefixIcon: const Icon(Iconsax.search_normal),
-            filled: true,
-            fillColor: Colors.white,
-            border: InputBorder.none,
-            hintText: "Search any recipes",
-            hintStyle: TextStyle(
-              color: Colors.grey.shade400,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            )),
+          prefixIcon: const Icon(Iconsax.search_normal),
+          suffixIcon: searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      searchQuery = "";
+                    });
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.white,
+          border: InputBorder.none,
+          hintText: "Search any recipes",
+          hintStyle: TextStyle(
+            color: Colors.grey.shade400,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+        ),
       ),
     );
   }
