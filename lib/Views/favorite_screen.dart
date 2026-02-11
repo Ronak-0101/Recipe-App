@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/Provider/diet_filter_provider.dart';
 import 'package:flutter_recipe_app/Provider/favorite_provider.dart';
 import 'package:flutter_recipe_app/Utils/Constant.dart';
+import 'package:flutter_recipe_app/Utils/diet_filter.dart';
+import 'package:flutter_recipe_app/main.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -16,6 +20,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
   Widget build(BuildContext context) {
     final Provider = FavoriteProvider.of(context);
     final favoriteItems = Provider.favorites;
+    final dietFilter = context.watch<DietFilterProvider>().dietFilter;
     return Scaffold(
       backgroundColor: kbackgroundColor,
       appBar: AppBar(
@@ -59,6 +64,10 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                         );
                       }
                       var favoriteItem = snapshot.data!;
+                      final data = favoriteItem.data() as Map<String, dynamic>?;
+                      if(data == null || !DietFilterUtils.matchesData(data, dietFilter)) {
+                        return const SizedBox.shrink();
+                      }
                       return Stack(
                         children: [
                           Padding(

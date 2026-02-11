@@ -1,6 +1,10 @@
 import 'dart:async';
 
+// import 'package:flutter/foundation.dart';
+// import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/Provider/diet_filter_provider.dart';
+import 'package:flutter_recipe_app/Utils/diet_filter.dart';
 import 'package:flutter_recipe_app/Utils/Constant.dart';
 import 'package:flutter_recipe_app/Views/search_screen.dart';
 import 'package:flutter_recipe_app/Views/view_all_items.dart';
@@ -9,6 +13,7 @@ import 'package:flutter_recipe_app/Widget/food_items_display.dart';
 import 'package:flutter_recipe_app/Widget/my_icon_button.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 // import 'package:flutter_recipe_app/Views/search_screen.dart';
 
 class MyAppHomeScreen extends StatefulWidget {
@@ -46,6 +51,9 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
 
     return query;
   }
+
+  final CollectionReference completeApp =
+      FirebaseFirestore.instance.collection("flutter_recipe_app");
 
   Query get allRecipes =>
       FirebaseFirestore.instance.collection("flutter_recipe_app");
@@ -104,6 +112,8 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
                     ),
                     // For Categories
                     selectedCategory(),
+                    const SizedBox(height: 8),
+                    dietToogleSelection(),
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -164,6 +174,13 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
                       }).toList();
                     }
 
+                    final dietFilter =
+                        context.watch<DietFilterProvider>().dietFilter;
+                    recipes = recipes
+                        .where((doc) =>
+                            DietFilterUtils.matchesFilter(doc, dietFilter))
+                        .toList();
+
                     return Padding(
                       padding: const EdgeInsets.only(left: 15, top: 5),
                       child: SingleChildScrollView(
@@ -180,11 +197,130 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
                     child: CircularProgressIndicator(),
                   );
                 },
-              )
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // Widget dietToogleSelection() {
+  //   return Consumer<DietFilterProvider>(
+  //     builder: (context, dietProvider, _) {
+  //       return Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Row(
+  //             children: [
+  //               const Expanded(
+  //                 child: Text(
+  //                   'Veg / Non-Veg Filter',
+  //                   style: TextStyle(
+  //                     fontWeight: FontWeight.w600,
+  //                     fontSize: 15,
+  //                   ),
+  //                 ),
+  //               ),
+  //               Switch(
+  //                 value: dietProvider.isFilterEnabled,
+  //                 activeColor: kprimaryColor,
+  //                 onChanged: (value) {
+  //                   dietProvider.setFilterEnabled(value);
+  //                 },
+  //               ),
+  //             ],
+  //           ),
+  //           if (dietProvider.isFilterEnabled)
+  //             Row(
+  //               children: [
+  //                 ChoiceChip(
+  //                   label: const Text('Veg'),
+  //                   selected: dietProvider.dietFilter == DietFilter.veg,
+  //                   selectedColor: Colors.greenAccent,
+  //                   labelStyle: TextStyle(
+  //                     color: dietProvider.dietFilter == DietFilter.veg
+  //                         ? Colors.white
+  //                         : Colors.black
+  //                   ),
+  //                   onSelected: (_) {
+  //                     dietProvider.setFilter(DietFilter.veg);
+  //                   },
+  //                 ),
+  //                 const SizedBox(width: 10),
+  //                 ChoiceChip(
+  //                   label: const Text('Non-Veg'),
+  //                   selected: dietProvider.dietFilter == DietFilter.nonVeg,
+  //                   selectedColor: Colors.redAccent,
+  //                   labelStyle: TextStyle(
+  //                     color: dietProvider.dietFilter == DietFilter.nonVeg
+  //                         ? Colors.white
+  //                         : Colors.grey.shade700,
+  //                   ),
+  //                   onSelected: (_) {
+  //                     dietProvider.setFilter(DietFilter.nonVeg);
+  //                   },
+  //                 ),
+  //               ],
+  //             )
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
+  Widget dietToogleSelection() {
+    return Consumer<DietFilterProvider>(
+      builder: (context, dietProvider, _) {
+        return Container(
+            // padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const SizedBox(width: 10),
+                Align(
+                  alignment: const Alignment(-0.5, 0),
+                  child: Text(
+                    dietProvider.isNonVeg ? "" : "Veg Mode",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: dietProvider.isNonVeg,
+                  activeColor: Colors.redAccent,
+                  activeTrackColor: Colors.redAccent.withOpacity(0.3),
+                  inactiveThumbColor: Colors.green,
+                  inactiveTrackColor: Colors.green.withOpacity(0.3),
+                  onChanged: (value) {
+                    dietProvider.toggleDietFilter();
+                  },
+                ),
+                Align(
+                  alignment: const Alignment(0.7, 0),
+                  child: Text(
+                    dietProvider.isNonVeg ? "Non-Veg Mode" : "",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ));
+      },
     );
   }
 
@@ -235,6 +371,77 @@ class _MyAppHomeScreenState extends State<MyAppHomeScreen> {
           child: CircularProgressIndicator(),
         );
       },
+    );
+  }
+
+  Widget showAllItems() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(left: 15, right: 5),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          StreamBuilder(
+            stream: allRecipes.snapshots(),
+            builder: (context, AsyncSnapshot<QuerySnapshot> streamSnapshot) {
+              if (streamSnapshot.hasData) {
+                final dietFilter =
+                    context.watch<DietFilterProvider>().dietFilter;
+                final filteredDocs = streamSnapshot.data!.docs
+                    .where(
+                        (doc) => DietFilterUtils.matchesFilter(doc, dietFilter))
+                    .toList();
+                return GridView.builder(
+                  // itemCount: streamSnapshot.data!.docs.length,
+                  itemCount: filteredDocs.length,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.78,
+                  ),
+                  itemBuilder: (context, index) {
+                    final QueryDocumentSnapshot documentSnapshot =
+                        // streamSnapshot.data!.docs[index];
+                        filteredDocs[index];
+                    return Column(
+                      children: [
+                        FoodItemsDisplay(documentSnapshot: documentSnapshot),
+                        Row(
+                          children: [
+                            const Icon(
+                              Iconsax.star1,
+                              color: Colors.amberAccent,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              documentSnapshot['rating'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Text("/5"),
+                            const SizedBox(width: 5),
+                            Text(
+                              "${documentSnapshot['reviews'.toString()]} Reviews",
+                              style: const TextStyle(
+                                color: Colors.grey,
+                              ),
+                            )
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                );
+              }
+              // it means if snapshot has data then it will show data otherwose show the progress bar.
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            },
+          )
+        ],
+      ),
     );
   }
 

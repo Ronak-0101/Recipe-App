@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/Provider/diet_filter_provider.dart';
 import 'package:flutter_recipe_app/Utils/Constant.dart';
+import 'package:flutter_recipe_app/Utils/diet_filter.dart';
 import 'package:flutter_recipe_app/Widget/food_items_display.dart';
 import 'package:flutter_recipe_app/Widget/my_icon_button.dart';
+import 'package:flutter_recipe_app/main.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 
 class ViewAllItems extends StatefulWidget {
   const ViewAllItems({super.key});
@@ -56,8 +60,13 @@ class _ViewAllItemsState extends State<ViewAllItems> {
               stream: completeApp.snapshots(),
               builder: (context, AsyncSnapshot<QuerySnapshot> streamSnapshot) {
                 if (streamSnapshot.hasData) {
+                  final dietFilter = context.watch<DietFilterProvider>().dietFilter;
+                  final filteredDocs = streamSnapshot.data!.docs
+                  .where((doc) => DietFilterUtils.matchesFilter(doc, dietFilter))
+                  .toList();                       
                   return GridView.builder(
-                    itemCount: streamSnapshot.data!.docs.length,
+                    // itemCount: streamSnapshot.data!.docs.length,
+                    itemCount: filteredDocs.length,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
@@ -67,7 +76,8 @@ class _ViewAllItemsState extends State<ViewAllItems> {
                     ),
                     itemBuilder: (context, index) {
                       final QueryDocumentSnapshot documentSnapshot =
-                          streamSnapshot.data!.docs[index];
+                          // streamSnapshot.data!.docs[index];
+                          filteredDocs[index];
                       return Column(
                         children: [
                           FoodItemsDisplay(documentSnapshot: documentSnapshot),

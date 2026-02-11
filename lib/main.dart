@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/Provider/diet_filter_provider.dart';
 import 'package:flutter_recipe_app/Provider/favorite_provider.dart';
 import 'package:flutter_recipe_app/Provider/quantity.dart';
 import 'package:flutter_recipe_app/Provider/theme_provider.dart';
@@ -26,6 +27,9 @@ class MyApp extends StatelessWidget {
       providers: [
         // Favorites provider
         ChangeNotifierProvider(create: (_) => FavoriteProvider(_)),
+
+        // Diet filter provider (All / Veg /NonVeg)
+        ChangeNotifierProvider(create: (_) => DietFilterProvider()),
 
         // Quantity provider
         ChangeNotifierProvider(create: (_) => QuantityProvider()),

@@ -3,9 +3,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_recipe_app/Provider/diet_filter_provider.dart';
 import 'package:flutter_recipe_app/Utils/Constant.dart';
+import 'package:flutter_recipe_app/Utils/diet_filter.dart';
 import 'package:flutter_recipe_app/Widget/food_items_display.dart';
+import 'package:flutter_recipe_app/main.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 
 class SearchScreen extends StatefulWidget {
   final String initialQuery;
@@ -131,6 +135,11 @@ class _SearchScreenState extends State<SearchScreen> {
           
           return false;
         }).toList();
+
+        final dietFilter = context.watch<DietFilterProvider>().dietFilter;
+        filteredRecipes = filteredRecipes
+        .where((doc) => DietFilterUtils.matchesFilter(doc, dietFilter))
+        .toList();
 
         if (filteredRecipes.isEmpty) {
           return _buildNoResults();

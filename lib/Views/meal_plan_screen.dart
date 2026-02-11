@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_recipe_app/Provider/diet_filter_provider.dart';
 import 'package:flutter_recipe_app/Utils/Constant.dart';
+import 'package:flutter_recipe_app/Utils/diet_filter.dart';
+import 'package:flutter_recipe_app/main.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 
 class MealPlanScreen extends StatefulWidget {
   const MealPlanScreen({super.key});
@@ -125,7 +129,15 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                       return const Text("No recipes found");
                     }
 
-                    final recipes = snapshot.data!.docs;
+                    // final recipes = snapshot.data!.docs;
+                    final dietFilter = context.watch<DietFilterProvider>().dietFilter;
+                    final recipes = snapshot.data!.docs
+                        .where((doc) => DietFilterUtils.matchesFilter(doc, dietFilter))
+                        .toList();
+
+                    if (recipes.isEmpty) {
+                      return const Text("No recipes found for selected filter");
+                    }
 
                     return ListView.builder(
                       shrinkWrap: true,
